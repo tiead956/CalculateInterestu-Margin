@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>โปรแกรมคำนวณกำไร และดอกเบี้ยโครงการ</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        /* Custom print styles */
+        @media print {
+            body { background-color: white !important; }
+            .print\:hidden { display: none !important; }
+            .print\:bg-white { background-color: white !important; }
+            .print\:p-0 { padding: 0 !important; }
+            .print\:p-2 { padding: 0.5rem !important; }
+            .print\:shadow-none { box-shadow: none !important; }
+            .print\:border-none { border: none !important; }
+            .print\:border-slate-300 { border-color: #cbd5e1 !important; }
+            .print\:bg-transparent { background-color: transparent !important; }
+            .print\:text-black { color: black !important; }
+            .print\:bg-slate-50 { background-color: #f8fafc !important; }
+            .print\:break-inside-avoid { break-inside: avoid !important; }
+            .print\:px-0 { padding-left: 0 !important; padding-right: 0 !important; }
+            .print\:pl-0 { padding-left: 0 !important; }
+            .print\:py-0 { padding-top: 0 !important; padding-bottom: 0 !important; }
+            .print\:text-left { text-align: left !important; }
+            .print\:bg-emerald-50 { background-color: #ecfdf5 !important; }
+            .print\:border-emerald-200 { border-color: #a7f3d0 !important; }
+            .print\:text-emerald-800 { color: #065f46 !important; }
+            .print\:text-emerald-600 { color: #059669 !important; }
+            .print\:bg-emerald-100 { background-color: #d1fae5 !important; }
+            .print\:bg-rose-50 { background-color: #fff1f2 !important; }
+            .print\:border-rose-200 { border-color: #fecdd3 !important; }
+            .print\:text-rose-800 { color: #9f1239 !important; }
+            .print\:text-rose-600 { color: #e11d48 !important; }
+            .print\:bg-rose-100 { background-color: #ffe4e6 !important; }
+            input, select, textarea {
+                border: none !important;
+                background: transparent !important;
+                box-shadow: none !important;
+                -webkit-appearance: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useMemo, useEffect } = React;
+
+        // Create simple SVG icons to replace Lucide react components for standalone HTML version
+        const Icon = ({ path, className = "w-5 h-5" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                {path}
+            </svg>
+        );
+
+        const CalculatorIcon = ({ className }) => <Icon className={className} path={<><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16.01" y1="10" y2="10"/><line x1="12" x2="12.01" y1="10" y2="10"/><line x1="8" x2="8.01" y1="10" y2="10"/><line x1="16" x2="16.01" y1="14" y2="14"/><line x1="12" x2="12.01" y1="14" y2="14"/><line x1="8" x2="8.01" y1="14" y2="14"/><line x1="16" x2="16.01" y1="18" y2="18"/><line x1="12" x2="12.01" y1="18" y2="18"/><line x1="8" x2="8.01" y1="18" y2="18"/></>} />;
+        const ClockIcon = ({ className }) => <Icon className={className} path={<><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></>} />;
+        const DollarSignIcon = ({ className }) => <Icon className={className} path={<><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></>} />;
+        const PercentIcon = ({ className }) => <Icon className={className} path={<><line x1="19" x2="5" y1="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></>} />;
+        const PieChartIcon = ({ className }) => <Icon className={className} path={<><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></>} />;
+        const TrendingUpIcon = ({ className }) => <Icon className={className} path={<><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></>} />;
+        const TrendingDownIcon = ({ className }) => <Icon className={className} path={<><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></>} />;
+        const ReceiptIcon = ({ className }) => <Icon className={className} path={<><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/></>} />;
+        const BriefcaseIcon = ({ className }) => <Icon className={className} path={<><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></>} />;
+        const UserIcon = ({ className }) => <Icon className={className} path={<><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></>} />;
+        const PhoneIcon = ({ className }) => <Icon className={className} path={<><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></>} />;
+        const MailIcon = ({ className }) => <Icon className={className} path={<><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></>} />;
+        const PrinterIcon = ({ className }) => <Icon className={className} path={<><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></>} />;
+
+        function App() {
+            const [globalSettings, setGlobalSettings] = useState({
+                interestRate: 7,
+                projectDuration: '',
+                salesPrice: '',
+                projectName: '',
+                clientName: '',
+                contactNumber: '',
+                contactEmail: '',
+            });
+
+            const [items, setItems] = useState([
+                { id: 'hw', name: 'ค่า Hardware', amount: '', datePaid: '', dateReceived: '' },
+                { id: 'sw', name: 'ค่า Software', amount: '', datePaid: '', dateReceived: '' },
+                { id: 'internal', name: 'ค่าแรงภายในบริษัท', amount: '', datePaid: '', dateReceived: '' },
+                { id: 'external', name: 'ค่าแรงภายนอก', amount: '', datePaid: '', dateReceived: '' },
+                { id: 'mkt', name: 'ค่า Marketing Expense', amount: '', datePaid: '', dateReceived: '' },
+                { id: 'other', name: 'ค่า Other Expense', amount: '', datePaid: '', dateReceived: '' },
+            ]);
+
+            const calculateDays = (start, end) => {
+                if (!start || !end) return 0;
+                const startDate = new Date(start);
+                const endDate = new Date(end);
+                const diffTime = endDate - startDate;
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                return diffDays > 0 ? diffDays : 0;
+            };
+
+            const calculateInterest = (amount, days, rate) => {
+                const numAmount = parseFloat(amount) || 0;
+                if (numAmount <= 0 || days <= 0 || rate <= 0) return 0;
+                return (numAmount * (rate / 100) * days) / 365;
+            };
+
+            const handleItemChange = (id, field, value) => {
+                setItems((prevItems) =>
+                    prevItems.map((item) =>
+                        item.id === id ? { ...item, [field]: value } : item
+                    )
+                );
+            };
+
+            const handleGlobalChange = (field, value) => {
+                setGlobalSettings((prev) => ({ ...prev, [field]: value }));
+            };
+
+            const formatNumber = (num) => {
+                return new Intl.NumberFormat('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
+            };
+
+            const summary = useMemo(() => {
+                let totalAmount = 0;
+                let totalInterest = 0;
+
+                items.forEach((item) => {
+                    const numAmount = parseFloat(item.amount) || 0;
+                    const days = calculateDays(item.datePaid, item.dateReceived);
+                    const interest = calculateInterest(numAmount, days, globalSettings.interestRate);
+                    
+                    totalAmount += numAmount;
+                    totalInterest += interest;
+                });
+
+                const salesPriceNum = parseFloat(globalSettings.salesPrice) || 0;
+                const vatAmount = salesPriceNum * 0.07;
+                const totalPriceWithVat = salesPriceNum + vatAmount;
+
+                const totalCost = totalAmount + totalInterest;
+                const netProfit = salesPriceNum - totalCost;
+                
+                const profitMargin = salesPriceNum > 0 ? (netProfit / salesPriceNum) * 100 : 0;
+
+                return {
+                    totalAmount,
+                    totalInterest,
+                    totalCost,
+                    salesPrice: salesPriceNum,
+                    vatAmount,
+                    totalPriceWithVat,
+                    netProfit,
+                    profitMargin,
+                };
+            }, [items, globalSettings]);
+
+            return (
+                <div className="min-h-screen bg-slate-50 p-4 md:p-8 font-sans text-slate-800 print:bg-white print:p-0">
+                    <div className="max-w-7xl mx-auto space-y-6">
+                        
+                        {/* Header */}
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-200 gap-4">
+                            <div className="flex items-center space-x-3">
+                                <div className="p-3 bg-blue-600 rounded-lg shadow-sm print:bg-blue-600">
+                                    <CalculatorIcon className="w-6 h-6 text-white" />
+                                </div>
+                                <div>
+                                    <h1 className="text-2xl font-bold text-slate-900">โปรแกรมคำนวณกำไร และดอกเบี้ยโครงการ</h1>
+                                    <p className="text-slate-500 text-sm">Project Profitability & Financial Calculator</p>
+                                </div>
+                            </div>
+                            
+                            <button 
+                                onClick={() => window.print()}
+                                className="print:hidden flex items-center justify-center space-x-2 bg-slate-800 hover:bg-slate-700 text-white px-5 py-2.5 rounded-lg font-medium transition-all shadow-sm active:scale-95"
+                            >
+                                <PrinterIcon className="w-5 h-5" />
+                                <span>พิมพ์ / Save PDF</span>
+                            </button>
+                        </div>
+
+                        {/* Project Info */}
+                        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 print:shadow-none print:border-slate-300">
+                            <h2 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
+                                <BriefcaseIcon className="w-5 h-5 text-blue-600" /> ข้อมูลเบื้องต้นโครงการ
+                            </h2>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-600 mb-1">ชื่อโครงการ</label>
+                                    <div className="relative">
+                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                            <BriefcaseIcon className="h-4 w-4 text-slate-400" />
+                                        </div>
+                                        <input
+                                            type="text"
+                                            className="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all print:border-none print:px-0 print:bg-transparent"
+                                            value={globalSettings.projectName}
+                                            onChange={(e) => handleGlobalChange('projectName', e.target.value)}
+                                            placeholder="ระบุชื่อโครงการ..."
+                                        />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-600 mb-1">ชื่อเจ้าของงาน / ลูกค้า</label>
+                                    <div className="relative">
+                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                            <UserIcon className="h-4 w-4 text-slate-400" />
+                                        </div>
+                                        <input
+                                            type="text"
+                                            className="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all print:border-none print:px-0 print:bg-transparent"
+                                            value={globalSettings.clientName}
+                                            onChange={(e) => handleGlobalChange('clientName', e.target.value)}
+                                            placeholder="ระบุชื่อลูกค้า..."
+                                        />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-600 mb-1">เบอร์ติดต่อ</label>
+                                    <div className="relative">
+                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                            <PhoneIcon className="h-4 w-4 text-slate-400" />
+                                        </div>
+                                        <input
+                                            type="text"
+                                            className="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all print:border-none print:px-0 print:bg-transparent"
+                                            value={globalSettings.contactNumber}
+                                            onChange={(e) => handleGlobalChange('contactNumber', e.target.value)}
+                                            placeholder="08X-XXX-XXXX"
+                                        />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-600 mb-1">อีเมล</label>
+                                    <div className="relative">
+                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                            <MailIcon className="h-4 w-4 text-slate-400" />
+                                        </div>
+                                        <input
+                                            type="email"
+                                            className="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all print:border-none print:px-0 print:bg-transparent"
+                                            value={globalSettings.contactEmail}
+                                            onChange={(e) => handleGlobalChange('contactEmail', e.target.value)}
+                                            placeholder="example@domain.com"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Financial Settings */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="md:col-span-1 bg-gradient-to-br from-amber-50 to-orange-50 p-5 rounded-xl shadow-sm border border-amber-200 flex flex-col justify-center space-y-4">
+                                <div>
+                                    <label className="flex items-center text-sm font-semibold text-amber-800 mb-2">
+                                        <ReceiptIcon className="w-4 h-4 mr-1.5" /> ราคาเสนอขาย (ก่อน VAT)
+                                    </label>
+                                    <div className="relative">
+                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-medium">฿</span>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            className="w-full pl-8 pr-3 py-2.5 text-lg font-semibold bg-white border border-amber-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all print:border-none print:bg-transparent"
+                                            value={globalSettings.salesPrice}
+                                            onChange={(e) => handleGlobalChange('salesPrice', e.target.value)}
+                                            placeholder="0.00"
+                                        />
+                                    </div>
+                                </div>
+                                
+                                <div className="bg-white/60 p-3 rounded-lg border border-amber-200/50 print:bg-transparent print:border-none print:p-0">
+                                    <div className="flex justify-between text-sm mb-1 text-slate-600">
+                                        <span>VAT 7%:</span>
+                                        <span>{formatNumber(summary.vatAmount)} ฿</span>
+                                    </div>
+                                    <div className="flex justify-between font-bold text-amber-900 border-t border-amber-200/50 pt-1 print:border-none">
+                                        <span>ราคารวม VAT:</span>
+                                        <span>{formatNumber(summary.totalPriceWithVat)} ฿</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+                                    <div className="flex items-center space-x-3 mb-3">
+                                        <div className="p-2.5 bg-indigo-50 rounded-full">
+                                            <PercentIcon className="w-5 h-5 text-indigo-600" />
+                                        </div>
+                                        <label className="block text-sm font-medium text-slate-700">อัตราดอกเบี้ย (% ต่อปี)</label>
+                                    </div>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        step="0.1"
+                                        className="w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all print:border-none print:bg-transparent print:px-0"
+                                        value={globalSettings.interestRate}
+                                        onChange={(e) => handleGlobalChange('interestRate', parseFloat(e.target.value) || 0)}
+                                        placeholder="เช่น 7"
+                                    />
+                                </div>
+                                <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+                                    <div className="flex items-center space-x-3 mb-3">
+                                        <div className="p-2.5 bg-emerald-50 rounded-full">
+                                            <ClockIcon className="w-5 h-5 text-emerald-600" />
+                                        </div>
+                                        <label className="block text-sm font-medium text-slate-700">ระยะเวลาโครงการ (ข้อมูลอ้างอิง)</label>
+                                    </div>
+                                    <input
+                                        type="text"
+                                        className="w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all print:border-none print:bg-transparent print:px-0"
+                                        value={globalSettings.projectDuration}
+                                        onChange={(e) => handleGlobalChange('projectDuration', e.target.value)}
+                                        placeholder="เช่น 3 เดือน, 120 วัน"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Table */}
+                        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden print:shadow-none print:border-slate-300">
+                            <div className="p-5 border-b border-slate-100 bg-slate-50/50 print:bg-white print:p-2">
+                                <h2 className="text-lg font-semibold text-slate-800">รายละเอียดต้นทุนและระยะเวลาเงินจม</h2>
+                                <p className="text-sm text-slate-500 print:hidden">กรอกยอดเงินและวันที่จ่าย/รับ เพื่อคำนวณดอกเบี้ย (Cost of Capital) แยกตามหมวดหมู่</p>
+                            </div>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr className="bg-slate-100/50 text-slate-600 text-sm print:bg-slate-50">
+                                            <th className="p-4 font-semibold whitespace-nowrap border-b">หมวดหมู่</th>
+                                            <th className="p-4 font-semibold whitespace-nowrap border-b">ยอดเงิน (บาท)</th>
+                                            <th className="p-4 font-semibold whitespace-nowrap border-b">
+                                                วันที่จ่ายเงิน<br/>
+                                                <span className="text-xs font-normal text-slate-400 print:text-slate-500">(จ่าย Supplier/ค่าแรง)</span>
+                                            </th>
+                                            <th className="p-4 font-semibold whitespace-nowrap border-b">
+                                                วันที่รับเงิน<br/>
+                                                <span className="text-xs font-normal text-slate-400 print:text-slate-500">(ลูกค้าชำระเงิน)</span>
+                                            </th>
+                                            <th className="p-4 font-semibold text-right whitespace-nowrap border-b">วันเงินจม</th>
+                                            <th className="p-4 font-semibold text-right whitespace-nowrap border-b">ดอกเบี้ย (บาท)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100">
+                                        {items.map((item) => {
+                                            const days = calculateDays(item.datePaid, item.dateReceived);
+                                            const interest = calculateInterest(item.amount, days, globalSettings.interestRate);
+
+                                            return (
+                                                <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
+                                                    <td className="p-4 font-medium text-slate-700 whitespace-nowrap print:p-2">
+                                                        {item.name}
+                                                    </td>
+                                                    <td className="p-4 min-w-[150px] print:p-2">
+                                                        <div className="relative">
+                                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 print:hidden">฿</span>
+                                                            <input
+                                                                type="number"
+                                                                min="0"
+                                                                className="w-full pl-7 pr-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-right print:border-none print:pl-0 print:py-0 print:text-left"
+                                                                placeholder="0.00"
+                                                                value={item.amount}
+                                                                onChange={(e) => handleItemChange(item.id, 'amount', e.target.value)}
+                                                            />
+                                                        </div>
+                                                    </td>
+                                                    <td className="p-4 min-w-[160px] print:p-2">
+                                                        <input
+                                                            type="date"
+                                                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm print:border-none print:p-0"
+                                                            value={item.datePaid}
+                                                            onChange={(e) => handleItemChange(item.id, 'datePaid', e.target.value)}
+                                                        />
+                                                    </td>
+                                                    <td className="p-4 min-w-[160px] print:p-2">
+                                                        <input
+                                                            type="date"
+                                                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm print:border-none print:p-0"
+                                                            value={item.dateReceived}
+                                                            onChange={(e) => handleItemChange(item.id, 'dateReceived', e.target.value)}
+                                                        />
+                                                    </td>
+                                                    <td className="p-4 text-right print:p-2">
+                                                        <span className={`inline-flex items-center justify-center px-2.5 py-1 rounded-full text-xs font-medium ${days > 0 ? 'bg-orange-100 text-orange-700 print:bg-transparent print:text-black print:p-0' : 'bg-slate-100 text-slate-500 print:bg-transparent print:p-0'}`}>
+                                                            {days} วัน
+                                                        </span>
+                                                    </td>
+                                                    <td className="p-4 text-right font-semibold text-red-600 min-w-[120px] print:p-2 print:text-black">
+                                                        {formatNumber(interest)}
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        {/* Dashboard */}
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 print:break-inside-avoid">
+                            <div className="md:col-span-1 bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                                <div className="flex items-center space-x-2 text-slate-500 mb-2">
+                                    <DollarSignIcon className="w-5 h-5" />
+                                    <h3 className="font-medium text-sm">รวมต้นทุนโครงการ</h3>
+                                </div>
+                                <p className="text-2xl font-bold text-slate-800">{formatNumber(summary.totalAmount)}</p>
+                                <p className="text-xs text-slate-400 mt-1">บาท (ไม่รวมดอกเบี้ย)</p>
+                            </div>
+                            
+                            <div className="md:col-span-1 bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                                <div className="flex items-center space-x-2 text-red-500 mb-2">
+                                    <PieChartIcon className="w-5 h-5" />
+                                    <h3 className="font-medium text-sm">รวมดอกเบี้ยเงินจม</h3>
+                                </div>
+                                <p className="text-2xl font-bold text-red-600">{formatNumber(summary.totalInterest)}</p>
+                                <p className="text-xs text-slate-400 mt-1">บาท (ต้นทุนแฝง)</p>
+                            </div>
+
+                            <div className={`md:col-span-2 p-6 rounded-xl shadow-sm border relative overflow-hidden flex flex-col justify-center ${summary.netProfit >= 0 ? 'bg-emerald-600 border-emerald-700 text-white print:bg-emerald-50 print:border-emerald-200 print:text-black' : 'bg-rose-600 border-rose-700 text-white print:bg-rose-50 print:border-rose-200 print:text-black'}`}>
+                                <div className="absolute right-0 top-0 opacity-10 translate-x-1/4 -translate-y-1/4 print:hidden">
+                                    {summary.netProfit >= 0 ? <TrendingUpIcon className="w-40 h-40" /> : <TrendingDownIcon className="w-40 h-40" />}
+                                </div>
+                                <div className="relative z-10 flex justify-between items-end">
+                                    <div>
+                                        <h3 className={`font-medium mb-1 flex items-center gap-2 ${summary.netProfit >= 0 ? 'text-emerald-100 print:text-emerald-800' : 'text-rose-100 print:text-rose-800'}`}>
+                                            {summary.netProfit >= 0 ? <TrendingUpIcon className="w-5 h-5" /> : <TrendingDownIcon className="w-5 h-5" />}
+                                            {summary.netProfit >= 0 ? 'กำไรสุทธิ (หลังหักดอกเบี้ย)' : 'ขาดทุนสุทธิ (หลังหักดอกเบี้ย)'}
+                                        </h3>
+                                        <p className="text-4xl font-bold">{formatNumber(summary.netProfit)} <span className="text-lg font-normal opacity-80 print:opacity-100">บาท</span></p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className={`text-sm mb-1 ${summary.netProfit >= 0 ? 'text-emerald-200 print:text-emerald-600' : 'text-rose-200 print:text-rose-600'}`}>Net Margin</p>
+                                        <div className={`inline-block px-3 py-1 rounded-lg text-xl font-bold ${summary.netProfit >= 0 ? 'bg-emerald-500/50 print:bg-emerald-100' : 'bg-rose-500/50 print:bg-rose-100'}`}>
+                                            {formatNumber(summary.profitMargin)} %
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
